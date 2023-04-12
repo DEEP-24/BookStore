@@ -111,11 +111,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="hidden" name="action" id="action" value="">
     </form>
     <script>
+
+        const navbarLinks = document.querySelectorAll('.navbar a');
+        const path = window.location.pathname;
+
+        const currentRoute = path.split('/')?.[2]
+
+        for (let i = 0; i < navbarLinks.length; i++) {
+            const link = navbarLinks[i];
+            if (link.getAttribute('href') === currentRoute) {
+                link.classList.add('active');
+                break;
+            }
+        }
+
         function setActionAndSubmitForm(action) {
             document.getElementById('action').value = action;
             document.getElementById('hiddenForm').submit();
         }
-
 
 
     </script>

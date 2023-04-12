@@ -44,15 +44,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
     $productId = $_POST['product_id'];
-    $query = "INSERT INTO `order` (`product_id`) VALUES ('$productId')";
+    $product = getProductById($productId);
+    $quantity = $_POST['quantity'];
+    if ($product) {
+        $query = "INSERT INTO `order` (`product_id`,`quantity`, `total`) VALUES('$productId','$quantity', '" . ($product['price'] * $quantity) . "')";
+        $result = executeQuery($query);
+        if (!$result) {
+            echo "Error: " . mysqli_error($connection);
+        } else {
+            echo "Order placed successfully!";
+
+        }
+    } else {
+        echo "Invalid product ID!";
+    }
+}
+
+function getProductById($productId)
+{
+    global $connection;
+    $query = "SELECT * FROM product WHERE id='$productId'";
     $result = executeQuery($query);
     if (!$result) {
-        echo "Error: " . mysqli_error($connection);
-    } else {
-        echo "Order placed successfully!";
+        return null;
     }
-} else {
-    echo "Invalid request!";
+
+    return mysqli_fetch_assoc($result);
 }
 ?>
 
@@ -101,18 +118,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
         <a href="view-orders.php">View Orders</a>
         <a href="seed.php">Seed Data</a>
     </div>
-    <div id="result"></div>
     <form id="orderForm">
-        <label for="productSelect">Select a product:</label>
+        <label for="productSelect" id="select" style="font-size: 20px; font-weight: bold; ">Select a product</label>
+        <div id="productSelectDiv" style="font-size: 22px"></div>
         <br>
-        <div id="productSelectDiv"></div>
-        <br>
-        <input type="submit" value="Place Order">
+        <div id="quantitySelection">
+            <label for="quantity" style="font-size: 20px; font-weight: bold; ">Select Quantity</label>
+            <br>
+            <input type="number" name="quantity" id="quantity" style="margin-top: 3px;" required />
+        </div>
+        <input type="submit" value="Place Order" id="place_order"
+            style="font-size: 15px; margin-top: 15px; border: 1px solid black; border-radius: 5px;">
     </form>
+    <div id="result"></div>
     <script>
+
+        const navbarLinks = document.querySelectorAll('.navbar a');
+        const path = window.location.pathname;
+
+        const currentRoute = path.split('/')?.[2]
+
+        for (let i = 0; i < navbarLinks.length; i++) {
+            const link = navbarLinks[i];
+            if (link.getAttribute('href') === currentRoute) {
+                link.classList.add('active');
+                break;
+            }
+        }
+
         function loadAllProducts() {
             fetch("view-products.php?action=fetch_all_products")
-                .then((response) => response.json()) -
+                .then((response) => response.json())
                 .then((data) => {
                     if (data.success && data.products.length > 0) {
                         handleResponse(data);
@@ -120,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
                         handleResponse({ success: true, products: null });
                     }
                 })
-                    .catch((error) => console.error("Error:", error));
+                .catch((error) => console.error("Error:", error));
         }
 
 
@@ -131,7 +167,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
                 if (response.products) {
                     displayProducts(response.products);
                 } else {
-                    resultDiv.innerHTML = `<h1>There are no products to display</h1>`
+                    resultDiv.innerHTML = `<h1>Please add products to create an order</h1>`
+                    document.getElementById('productSelectDiv').innerHTML = '';
+                    document.getElementById('quantitySelection').innerHTML = '';
+                    document.getElementById('select').style.display = 'none';
+                    document.getElementById('place_order').style.display = 'none';
+
                 }
             } else {
                 resultDiv.innerHTML = response.message;
@@ -142,30 +183,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
         //display the products
         function displayProducts(products) {
             let selectHTML = '<select id="productSelect">';
-            const resultDiv = document.getElementById('result');
+            const productSelectDiv = document.getElementById('productSelectDiv');
             for (const product of products) {
                 selectHTML += `<option value="${product.id}">${product.name} - $${product.price}</option>`;
             }
             selectHTML += '</select>';
-            resultDiv.innerHTML = selectHTML;
+            productSelectDiv.innerHTML = selectHTML;
         }
+
+
 
         const orderForm = document.getElementById('orderForm');
         orderForm.addEventListener('submit', function (event) {
             event.preventDefault();
             const productId = document.getElementById('productSelect').value;
+            const quantity = document.getElementById('quantity').value;
             fetch('add-order.php', {
                 method: 'POST',
                 body: new URLSearchParams({
-                    'product_id': productId
+                    'product_id': productId,
+                    'quantity': quantity
                 })
             })
                 .then((response) => response.text())
                 .then((data) => {
-                    alert(data);
+                    displayOrderResult("Order Placed Successfully!");
                 })
                 .catch((error) => console.error("Error:", error));
         });
+        function displayOrderResult(message) {
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = `<p> ${message}</p>`;
+            setTimeout(() => {
+                document.getElementById("orderForm").reset();
+                resultDiv.innerHTML = '';
+            }, 1000);
+        }
+
 
         document.addEventListener("DOMContentLoaded", loadAllProducts);
 

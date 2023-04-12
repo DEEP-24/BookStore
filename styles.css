@@ -19,3 +19,8 @@
   background-color: #ddd;
   color: black;
 }
+
+.navbar a.active {
+  background-color: #acacac;
+  color: #000000;
+}

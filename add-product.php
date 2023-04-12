@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <form action="add-product.php" method="post" id="product_form">
         <!-- Name,description, price, image-url  -->
-        <fieldset style="display: flex; flex-direction: column; gap: 4px;">
+        <fieldset style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
             <div>
                 <label for="name">Name</label>
                 <input type="text" name="name" id="name" required />
@@ -90,11 +90,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </fieldset>
     </form>
-    <button id="submit_button">Add Product</button>
+    <button id="submit_button" style=" margin-top: 3px; border: 1px solid black; border-radius: 5px;">Add
+        Product</button>
 
     <br>
     <div id="result"></div>
     <script>
+        const navbarLinks = document.querySelectorAll('.navbar a');
+        const path = window.location.pathname;
+
+        const currentRoute = path.split('/')?.[2]
+
+        for (let i = 0; i < navbarLinks.length; i++) {
+            const link = navbarLinks[i];
+            if (link.getAttribute('href') === currentRoute) {
+                link.classList.add('active');
+                break;
+            }
+        }
+
         const resultElement = document.getElementById("result");
 
         document.getElementById('submit_button').addEventListener('click', async function (event) {
@@ -169,6 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 errorElement.innerHTML = error.message;
             }
         }
+
+
 
     </script>
 </body>

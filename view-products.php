@@ -88,8 +88,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         <a href="view-orders.php">View Orders</a>
         <a href="seed.php">Seed Data</a>
     </div>
+    <h3>Products</h3>
     <div id="result"></div>
     <script>
+
+        const navbarLinks = document.querySelectorAll('.navbar a');
+        const path = window.location.pathname;
+
+        const currentRoute = path.split('/')?.[2]
+
+        for (let i = 0; i < navbarLinks.length; i++) {
+            const link = navbarLinks[i];
+            if (link.getAttribute('href') === currentRoute) {
+                link.classList.add('active');
+                break;
+            }
+        }
+
         function loadAllProducts() {
             fetch("view-products.php?action=fetch_all_products")
                 .then((response) => {
@@ -145,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             <td>${product.id}</td>
             <td>${product.name}</td>
             <td>${product.description}</td>
-            <td>${product.price}</td>
+            <td>${'$' + product.price}</td>
             <td>${product.image_url}</td>
             <td>${product.created_at}</td>
         </tr>`;
@@ -154,6 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             tableHTML += '</table>';
             resultDiv.innerHTML = tableHTML;
         }
+
 
         document.addEventListener("DOMContentLoaded", loadAllProducts);
 

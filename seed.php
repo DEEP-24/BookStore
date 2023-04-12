@@ -1,5 +1,6 @@
 <?php
 
+
 error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
 
 
@@ -23,8 +24,8 @@ function executeQuery($query)
 function seedData($connection)
 {
     //Dropping table if they exits
-    $query1 = "DROP TABLE IF EXISTS product";
-    $query2 = "DROP TABLE IF EXISTS `order`";
+    $query2 = "DROP TABLE IF EXISTS product";
+    $query1 = "DROP TABLE IF EXISTS `order`";
 
     if (!executeQuery($query1) || !executeQuery($query2)) {
         return ['success' => false, 'message' => "Error: " . $connection->error];
@@ -38,18 +39,18 @@ function seedData($connection)
         " price DECIMAL(10, 2) NOT NULL," .
         " image_url VARCHAR(255)," .
         " created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " .
-        " updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);";
+        " updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" . ");";
 
 
     $query4 = "CREATE TABLE `order` (" .
         "id INT AUTO_INCREMENT PRIMARY KEY," .
         "product_id INT NOT NULL," .
+        "quantity INT NOT NULL," .
         "total DECIMAL(10, 2) NOT NULL," .
         "status ENUM('pending', 'processing', 'shipped', 'completed', 'cancelled') NOT NULL DEFAULT 'pending'," .
         "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," .
         "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," .
-        "FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE" .
-        ");";
+        "FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE" . ");";
 
 
     if (executeQuery($query3) == TRUE && executeQuery($query4) == TRUE) {
@@ -75,6 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode($response);
     exit();
 }
+
+
 ?>
 
 <!DOCTYPE html>
@@ -106,6 +109,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="hidden" name="action" id="action" value="">
     </form>
     <script>
+        const navbarLinks = document.querySelectorAll('.navbar a');
+        const path = window.location.pathname;
+
+        const currentRoute = path.split('/')?.[2]
+
+        for (let i = 0; i < navbarLinks.length; i++) {
+            const link = navbarLinks[i];
+            if (link.getAttribute('href') === currentRoute) {
+                link.classList.add('active');
+                break;
+            }
+        }
+
         function setActionAndSubmitForm(action) {
             document.getElementById('action').value = action;
             submitForm();

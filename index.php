@@ -23,8 +23,48 @@
     <!-- Page content -->
     <div>
         <h1>Welcome</h1>
-    </div>
+        <div>
+            <h2>Team members</h2>
+            <p>Member 1</p>
+            <ul>
+                <li>Name: </li>
+                <li>Task:</li>
+            </ul>
+            <p>Member 2</p>
+            <ul>
+                <li>Name: </li>
+                <li>Task:</li>
+            </ul>
+            <p>Member 3</p>
+            <ul>
+                <li>Name: </li>
+                <li>Task:</li>
+            </ul>
+            <p>Member 4</p>
+            <ul>
+                <li>Name: </li>
+                <li>Task:</li>
+            </ul>
 
+        </div>
+    </div>
+    <script>
+
+
+        const navbarLinks = document.querySelectorAll('.navbar a');
+        const path = window.location.pathname;
+
+        const currentRoute = path.split('/')?.[2]
+
+        for (let i = 0; i < navbarLinks.length; i++) {
+            const link = navbarLinks[i];
+            if (link.getAttribute('href') === currentRoute) {
+                link.classList.add('active');
+                break;
+            }
+        }
+
+    </script>
 </body>
 
 </html>
