@@ -1,70 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+// Start output buffering
+ob_start();
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page 1</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
+$pageTitle = "Home Page";
+$pageDescription = "This is the home page";
+?>
 
-<body>
-
-    <!-- Navigation bar -->
-    <div class="navbar">
-        <a href="index.php">Home</a>
-        <a href="add-product.php">Add Product</a>
-        <a href="view-products.php">View Products</a>
-        <a href="add-order.php">Add Order</a>
-        <a href="view-orders.php">View Orders</a>
-        <a href="seed.php">Seed Data</a>
-    </div>
-
-    <!-- Page content -->
-    <div>
-        <h1>Welcome</h1>
-        <div>
-            <h2>Team members</h2>
+<!-- Page content -->
+<main>
+    <h1>Welcome</h1>
+    <h2>Team members</h2>
+    <ol>
+        <li>
             <p>Member 1</p>
             <ul>
                 <li>Name: </li>
                 <li>Task:</li>
             </ul>
+        </li>
+        <li>
             <p>Member 2</p>
             <ul>
                 <li>Name: </li>
                 <li>Task:</li>
             </ul>
+        </li>
+        <li>
             <p>Member 3</p>
             <ul>
                 <li>Name: </li>
                 <li>Task:</li>
             </ul>
+        </li>
+        <li>
             <p>Member 4</p>
             <ul>
                 <li>Name: </li>
                 <li>Task:</li>
             </ul>
+        </li>
+    </ol>
+</main>
 
-        </div>
-    </div>
-    <script>
+<?php
+// Get the captured content and end output buffering
+$content = ob_get_clean();
 
-
-        const navbarLinks = document.querySelectorAll('.navbar a');
-        const path = window.location.pathname;
-
-        const currentRoute = path.split('/')?.[2]
-
-        for (let i = 0; i < navbarLinks.length; i++) {
-            const link = navbarLinks[i];
-            if (link.getAttribute('href') === currentRoute) {
-                link.classList.add('active');
-                break;
-            }
-        }
-
-    </script>
-</body>
-
-</html>
+// Include the template file, which includes the header, content, and footer
+include 'templates/template.php';
+?>

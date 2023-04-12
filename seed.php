@@ -1,166 +1,79 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
+require_once 'config/db_connection.php';
 
-error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+ob_start();
 
-
-$server_name = "localhost";
-$user_name = "root";
-$password = "";
-$database = "database";
-$connection = mysqli_connect($server_name, $user_name, $password, $database);
-
-if (!$connection) {
-    die("Failed " . mysqli_connect_error());
-}
-
-function executeQuery($query)
-{
-    global $connection;
-    return mysqli_query($connection, $query);
-}
-
-
-function seedData($connection)
-{
-    //Dropping table if they exits
-    $query2 = "DROP TABLE IF EXISTS product";
-    $query1 = "DROP TABLE IF EXISTS `order`";
-
-    if (!executeQuery($query1) || !executeQuery($query2)) {
-        return ['success' => false, 'message' => "Error: " . $connection->error];
-    }
-
-    //creating table after dropping them
-    $query3 = "CREATE TABLE product (" .
-        " id INT AUTO_INCREMENT PRIMARY KEY," .
-        " name VARCHAR(255) NOT NULL," .
-        " description TEXT," .
-        " price DECIMAL(10, 2) NOT NULL," .
-        " image_url VARCHAR(255)," .
-        " created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " .
-        " updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" . ");";
-
-
-    $query4 = "CREATE TABLE `order` (" .
-        "id INT AUTO_INCREMENT PRIMARY KEY," .
-        "product_id INT NOT NULL," .
-        "quantity INT NOT NULL," .
-        "total DECIMAL(10, 2) NOT NULL," .
-        "status ENUM('pending', 'processing', 'shipped', 'completed', 'cancelled') NOT NULL DEFAULT 'pending'," .
-        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," .
-        "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," .
-        "FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE" . ");";
-
-
-    if (executeQuery($query3) == TRUE && executeQuery($query4) == TRUE) {
-        return ['success' => true, 'message' => "Table product and order have been created"];
-    } else {
-        return ['success' => false, 'message' => "Error: " . $connection->error];
-    }
-}
-
-
+$pdo = DBConnection::getPDO();
+$pageTitle = "Seed the database";
+$pageDescription = "This is the seed page";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = isset($_POST['action']) ? $_POST['action'] : '';
-    $response = ['success' => false, 'message' => 'Invalid action'];
+    try {
+        $stmt1 = $pdo->prepare("DROP TABLE IF EXISTS `order`");
+        $stmt2 = $pdo->prepare("DROP TABLE IF EXISTS product");
 
-    switch ($action) {
-        case 'seed_data':
-            $response = seedData($connection);
-            break;
-        // Add more cases for different actions
+        $stmt1->execute();
+        $stmt2->execute();
+
+        $query3 = "CREATE TABLE product (" .
+            " id INT AUTO_INCREMENT PRIMARY KEY," .
+            " name VARCHAR(255) NOT NULL," .
+            " description TEXT," .
+            " price DECIMAL(10, 2) NOT NULL," .
+            " image_url VARCHAR(255)," .
+            " created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " .
+            " updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" . ");";
+
+
+        $query4 = "CREATE TABLE `order` (" .
+            "id INT AUTO_INCREMENT PRIMARY KEY," .
+            "product_id INT NOT NULL," .
+            "quantity INT NOT NULL," .
+            "total DECIMAL(10, 2) NOT NULL," .
+            "status ENUM('shipped', 'completed') NOT NULL DEFAULT 'completed'," .
+            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," .
+            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," .
+            "FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE" . ");";
+
+        $stmt3 = $pdo->prepare($query3);
+        $stmt4 = $pdo->prepare($query4);
+
+        $stmt3->execute();
+        $stmt4->execute();
+
+        $success_message = "Database has been reset";
+        header("Location: index.php");
+    } catch (PDOException $e) {
+        $error_message = "Error: " . $e->getMessage();
     }
 
-    echo json_encode($response);
-    exit();
+
 }
 
 
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-
-<body>
-    <!-- Navigation bar -->
-    <div class="navbar">
-        <a href="index.php">Home</a>
-        <a href="add-product.php">Add Product</a>
-        <a href="view-products.php">View Products</a>
-        <a href="add-order.php">Add Order</a>
-        <a href="view-orders.php">View Orders</a>
-        <a href="seed.php">Seed Data</a>
-    </div>
-    <button onClick="setActionAndSubmitForm('seed_data')" style="cursor: pointer; padding: 4px; margin: 4px;">Seed
-        Data</button>
+<main>
     <br>
-    <div id="result"></div>
-    <form id="hiddenForm" method="POST" style="display: none;">
-        <input type="hidden" name="action" id="action" value="">
+    <form action="seed.php" method="POST">
+        <button style="cursor: pointer; padding: 4px; margin: 4px;">Seed data</button>
     </form>
-    <script>
-        const navbarLinks = document.querySelectorAll('.navbar a');
-        const path = window.location.pathname;
 
-        const currentRoute = path.split('/')?.[2]
+    <!-- Display success or error message -->
+    <?php if (isset($success_message)): ?>
+        <div style="color: green; font-size: 14px;">
+            <?= $success_message ?>
+        </div>
+    <?php elseif (isset($error_message)): ?>
+        <div style="color: red; font-size: 14px;">
+            <?= $error_message ?>
+        </div>
+    <?php endif; ?>
+</main>
 
-        for (let i = 0; i < navbarLinks.length; i++) {
-            const link = navbarLinks[i];
-            if (link.getAttribute('href') === currentRoute) {
-                link.classList.add('active');
-                break;
-            }
-        }
-
-        function setActionAndSubmitForm(action) {
-            document.getElementById('action').value = action;
-            submitForm();
-        }
-
-        function submitForm() {
-            const form = document.getElementById('hiddenForm');
-            const formData = new FormData(form);
-            const request = new XMLHttpRequest();
-
-            request.onreadystatechange = function () {
-                if (request.readyState === 4 && request.status === 200) {
-                    handleResponse(request.responseText);
-                }
-            };
-
-            request.open("POST", "seed.php");
-            request.send(formData);
-        }
-
-        function handleResponse(responseText) {
-            console.log("Response :", responseText);
-            const response = JSON.parse(responseText);
-            const resultDiv = document.getElementById('result');
-
-            console.log(response);
-            if (response.success) {
-                resultDiv.innerHTML = response.message;
-                setTimeout(() => {
-                    window.location.href = "index.php";
-                }, 1500);
-            } else {
-                resultDiv.innerHTML = response.message;
-            }
-
-        }
-
-
-    </script>
-</body>
-
-</html>
+<?php
+$content = ob_get_clean();
+include 'templates/template.php';
+?>

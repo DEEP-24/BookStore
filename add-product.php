@@ -1,192 +1,110 @@
 <?php
-$server_name = "localhost";
-$user_name = "root";
-$password = "";
-$database = "database";
-$connection = mysqli_connect($server_name, $user_name, $password, $database);
+require_once 'config/db_connection.php';
+require_once 'includes/db_product_pdo.php';
 
-if (!$connection) {
-    die("Failed " . mysqli_connect_error());
-}
+ob_start();
 
-function executeQuery($query)
-{
-    global $connection;
-    return mysqli_query($connection, $query);
-}
+$pageTitle = "Add Product";
+$pageDescription = "This is the add product page";
 
+$pdo = DBConnection::getPDO();
+$productPDO = new ProductPDO($pdo);
 
-function addProduct($name, $description, $price, $image_url)
-{
-    global $connection;
-    $stmt = $connection->prepare("INSERT INTO product (name, description, price, image_url) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssds", $name, $description, $price, $image_url);
-
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => "Product has been created"]);
-    } else {
-        echo json_encode(['success' => false, 'message' => "Error: " . $connection->error]);
-    }
-    exit();
-}
-
-
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'] ?? '';
+    $description = $_POST['description'] ?? '';
+    $price = $_POST['price'] ?? '';
+    $image_url = $_POST['image_url'] ?? '';
 
+    if (empty($name)) {
+        $errors['name'] = "Name field is required";
+    }
 
-    $name = $_POST['name'];
-    $description = $_POST['description'];
-    $price = $_POST['price'];
-    $image_url = $_POST['image_url'];
-    addProduct($name, $description, $price, $image_url);
+    if (empty($price) || $price < 1) {
+        $errors['price'] = "Price should be at least $1";
+    }
 
+    if (!empty($image_url) && !filter_var($image_url, FILTER_VALIDATE_URL)) {
+        $errors['image_url'] = "Image URL is not valid";
+    }
+
+    if (empty($errors)) {
+        $response = $productPDO->insertProduct($name, $description, $price, $image_url);
+
+        if ($response) {
+            $success_message = "Product has been created";
+            // redirect to view-products.php on success
+            header("Location: view-products.php");
+        } else {
+            $error_message = "Error: Could not create the product";
+        }
+    }
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-
-<body>
-    <!-- Navigation bar -->
-    <div class="navbar">
-        <a href="index.php">Home</a>
-        <a href="add-product.php">Add Product</a>
-        <a href="view-products.php">View Products</a>
-        <a href="add-order.php">Add Order</a>
-        <a href="view-orders.php">View Orders</a>
-        <a href="seed.php">Seed Data</a>
-    </div>
+<main>
     <form action="add-product.php" method="post" id="product_form">
         <!-- Name,description, price, image-url  -->
         <fieldset style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
             <div>
                 <label for="name">Name</label>
-                <input type="text" name="name" id="name" required />
-                <p id="name-error" style=" font-size: 14px; color: red"></p>
+                <input type="text" name="name" id="name" required value="<?= htmlspecialchars($name ?? '') ?>" />
+                <p id="name-error" style=" font-size: 14px; color: red">
+                    <?= $errors['name'] ?? '' ?>
+                </p>
+                </p>
             </div>
-            <div>
+            <div style="display: flex; flex-direction: row; gap: 4px; ">
                 <label for="description">Description</label>
-                <input type="text" name="description" id="description" />
-                <p></p>
+                <textarea name="description" id="description" rows='5'>
+                    <?= htmlspecialchars($description ?? '') ?>
+                </textarea>
             </div>
             <div>
                 <label for="price">Price</label>
-                <input type="number" name="price" id="price" min="1" />
-                <p id="price-error" style="font-size: 14px; color: red"></p>
+                <input type="number" name="price" id="price" min="1" value='<?= htmlspecialchars($price ?? '') ?>' />
+                <p id="price-error" style="font-size: 14px; color: red">
+                    <?= $errors['price'] ?? '' ?>
+                </p>
             </div>
             <div>
                 <label for="image_url">Image_Url</label>
-                <input type="text" name="image_url" id="image_url" />
-                <p></p>
+                <input type="text" name="image_url" id="image_url" required
+                    value="<?= htmlspecialchars($image_url ?? '') ?>" />
+                <p id="image_url-error" style="font-size: 14px; color: red">
+                    <?= $errors['image_url'] ?? '' ?>
+                </p>
             </div>
         </fieldset>
+
+        <button id="submit_button" style=" margin-top: 3px; border: 1px solid black; border-radius: 5px;">Add
+            Product
+        </button>
     </form>
-    <button id="submit_button" style=" margin-top: 3px; border: 1px solid black; border-radius: 5px;">Add
-        Product</button>
+
 
     <br>
-    <div id="result"></div>
-    <script>
-        const navbarLinks = document.querySelectorAll('.navbar a');
-        const path = window.location.pathname;
+    <?php if (isset($success_message)): ?>
+        <div id="result" style="color: green; font-size: 14px;">
+            <?= $success_message ?>
+        </div>
 
-        const currentRoute = path.split('/')?.[2]
-
-        for (let i = 0; i < navbarLinks.length; i++) {
-            const link = navbarLinks[i];
-            if (link.getAttribute('href') === currentRoute) {
-                link.classList.add('active');
-                break;
-            }
-        }
-
-        const resultElement = document.getElementById("result");
-
-        document.getElementById('submit_button').addEventListener('click', async function (event) {
-            event.preventDefault();
-
-            const form = document.getElementById('product_form');
-
-            if (!validateForm(form)) {
-                return;
-            }
-
-            const formData = new URLSearchParams(new FormData(form)).toString();
-
-            const response = await fetch('add-product.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: formData
-            });
-
-            const result = await response.json();
-            document.getElementById('result').innerText = result.message;
-
+        <script>
             setTimeout(() => {
-                clearFormInputs(form);
-            }, 0);
+                document.getElementById('product_form').reset();
+                document.getElementById('result').style.display = 'none';
+            }, 3000);
+        </script>
+    <?php elseif (isset($error_message)): ?>
+        <div id="result" style="color: red; font-size: 14px;">
+            <?= $error_message ?>
+        </div>
+    <?php endif; ?>
+</main>
 
-            setTimeout(() => {
-                hideResultMessage();
-            }, 800)
-        });
-
-        function clearFormInputs(form) {
-            form.reset();
-        }
-
-        function hideResultMessage() {
-            resultElement.style.display = "none";
-        }
-
-        function validateForm(form) {
-            const nameInput = form.name;
-            const priceInput = form.price;
-
-            let errors = []
-
-            if (!nameInput.value) {
-                errors.push({
-                    id: "name-error", message: "Name field is required"
-                })
-            }
-
-            if (priceInput.value < 1) {
-                errors.push({
-                    id: "price-error", message: "price should be atleast $1"
-                })
-            }
-
-
-            if (errors.length > 0) {
-                displayErrorMessage(errors);
-                return false;
-            }
-
-            return true;
-        }
-
-        function displayErrorMessage(errors) {
-            for (const error of errors) {
-                const errorElement = document.getElementById(error.id);
-                errorElement.innerHTML = error.message;
-            }
-        }
-
-
-
-    </script>
-</body>
-
-</html>
+<?php
+$content = ob_get_clean();
+include 'templates/template.php';
+?>
